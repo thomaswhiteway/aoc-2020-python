@@ -2,40 +2,56 @@ import re
 import sys
 
 
-def int_field(lower, upper, allow_padding=False):
-    def validator(value):
-        if not allow_padding and value.startswith("0"):
+class IntValidator:
+    def __init__(self, lower, upper, allow_padding=False):
+        self._lower = lower
+        self._upper = upper
+        self._allow_padding = allow_padding
+
+    def __call__(self, value):
+        if not self._allow_padding and value.startswith("0"):
             return False
 
         try:
             value = int(value)
-            return lower <= value <= upper
+            return self._lower <= value <= self._upper
         except ValueError:
             return False
 
-    return validator
 
-def valid_height(height):
-    value, unit = (height[:-2], height[-2:])
+class HeightValidator:
+    def __call__(self, height):
+        value, unit = (height[:-2], height[-2:])
 
-    if unit == "cm":
-        validator = int_field(150, 193, allow_padding=True)
-    elif unit == "in":
-        validator = int_field(59, 76, allow_padding=True)
-    else:
-        return False
+        if unit == "cm":
+            validator = IntValidator(150, 193, allow_padding=True)
+        elif unit == "in":
+            validator = IntValidator(59, 76, allow_padding=True)
+        else:
+            return False
 
-    return validator(value)
-
-
-def regex_field(regex):
-    regex = re.compile(regex)
-    return lambda value: regex.fullmatch(value) is not None
+        return validator(value)
 
 
-def choice_field(options):
-    options = set(options)
-    return lambda value: value in options
+class RegexValidator:
+    def __init__(self, regex):
+        self._regex = re.compile(regex)
+
+    def __call__(self, value):
+        return self._regex.fullmatch(value) is not None
+
+
+class ChoiceValidator:
+    def __init__(self, options):
+        self._options = set(options)
+
+    def __call__(self, value):
+        return value in self._options
+
+
+class AnyValidator:
+    def __call__(self, value):
+        return True
 
 
 class Passport:
@@ -61,14 +77,14 @@ class Passport:
     ]
 
     FIELD_VALIDATORS = {
-        "byr": int_field(1920, 2002),
-        "iyr": int_field(2010, 2020),
-        "eyr": int_field(2020, 2030),
-        "hgt": valid_height,
-        "hcl": regex_field(r"#[0-9a-f]{6}"),
-        "ecl": choice_field(VALID_EYE_COLOURS),
-        "pid": regex_field(r"\d{9}"),
-        "cid": regex_field(r".*")
+        "byr": IntValidator(1920, 2002),
+        "iyr": IntValidator(2010, 2020),
+        "eyr": IntValidator(2020, 2030),
+        "hgt": HeightValidator(),
+        "hcl": RegexValidator(r"#[0-9a-f]{6}"),
+        "ecl": ChoiceValidator(VALID_EYE_COLOURS),
+        "pid": RegexValidator(r"\d{9}"),
+        "cid": AnyValidator()
     }
 
     def __init__(self, fields):
@@ -85,7 +101,7 @@ class Passport:
 
     @classmethod
     def _field_value_valid(cls, name, value):
-        return cls.FIELD_VALIDATORS[name](value)
+        return cls.FIELD_VALIDATORS.get(name, lambda _: False)(value)
 
 
 def read_passports(infile):
