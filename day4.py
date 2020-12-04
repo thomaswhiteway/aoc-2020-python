@@ -3,7 +3,7 @@ import sys
 
 
 class IntValidator:
-    def __init__(self, lower, upper, allow_padding=False):
+    def __init__(self, lower, upper, allow_padding=True):
         self._lower = lower
         self._upper = upper
         self._allow_padding = allow_padding
@@ -24,9 +24,9 @@ class HeightValidator:
         value, unit = (height[:-2], height[-2:])
 
         if unit == "cm":
-            validator = IntValidator(150, 193, allow_padding=True)
+            validator = IntValidator(150, 193)
         elif unit == "in":
-            validator = IntValidator(59, 76, allow_padding=True)
+            validator = IntValidator(59, 76)
         else:
             return False
 
@@ -82,9 +82,9 @@ class Passport:
     ]
 
     FIELD_VALIDATORS = {
-        "byr": IntValidator(1920, 2002),
-        "iyr": IntValidator(2010, 2020),
-        "eyr": IntValidator(2020, 2030),
+        "byr": IntValidator(1920, 2002, allow_padding=False),
+        "iyr": IntValidator(2010, 2020, allow_padding=False),
+        "eyr": IntValidator(2020, 2030, allow_padding=False),
         "hgt": HeightValidator(),
         "hcl": RegexValidator(r"#[0-9a-f]{6}"),
         "ecl": ChoiceValidator(VALID_EYE_COLOURS),
