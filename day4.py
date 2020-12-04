@@ -54,6 +54,11 @@ class AnyValidator:
         return True
 
 
+class NoneValidator:
+    def __call__(self, value):
+        return False
+
+
 class Passport:
 
     MANDATORY_FIELDS = [
@@ -101,7 +106,8 @@ class Passport:
 
     @classmethod
     def _field_value_valid(cls, name, value):
-        return cls.FIELD_VALIDATORS.get(name, lambda _: False)(value)
+        validator = cls.FIELD_VALIDATORS.get(name, NoneValidator())
+        return validator(value)
 
 
 def read_passports(infile):
